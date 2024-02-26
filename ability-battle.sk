@@ -9,6 +9,7 @@ command /start:
             set {_p} to name of loop-player
             send "あなたの能力は ""%{ability::players::%{_p}%}%§r""です%nl%能力の詳細はインベントリの頭防具でいつでも確認できます" to loop-player
             send "切り替え可能能力は""/ability""または""/a""で切り替えることができます" to loop-player
+        
 #能力切り替え
 command /ability:
     aliases: /a
@@ -71,7 +72,13 @@ on damage:
     attacker is player   
     abilityistrue(attacker) is yes
     abilityof(attacker) is {ability::6}
-    make an explosion of force 1 at victim   
+    make an explosion of force 1 at victim 
+#能力7採掘
+on mine: 
+    abilityistrue(player) is yes
+    abilityof(player) is {ability::7}
+    set {_b} to raw name of event-block
+    
 #ドロップ10倍キャンペーン
 on death:
     attacker is player
@@ -81,11 +88,12 @@ on death:
 #能力設定
 on load:
     set {ability::1} to "飛行 / §k__§rUnknown Flying Player§k__§r"
-    set {ability::2} to "ワンパン / §cOne Tap Killer"""
+    set {ability::2} to "ワンパン / §cOne Tap Killer"
     set {ability::3} to "スペク化 / §lA Invincible and Invisible"
     set {ability::4} to "アドベ化 / §2§lEverybody an Adventurer"
     set {ability::5} to "不死身 / §4§lDEATH is Cancelled"
     set {ability::6} to "爆弾魔 / §a§lIch bin Creeper"
+    set {ability::7} to "時間加速 / §e"
 #能力配布
 function ability(n: number ,p :player):
     set {_p} to name of {_p}
@@ -102,8 +110,8 @@ function abilityslore(ability: text) :: text:
         return "%nl%§cあなたは生物を一撃で殺すことができます。%nl%%nl%§7切り替え可能能力：一撃必殺%nl%§8有効になっている間エンティティに攻撃すると%nl%§8攻撃されたエンティティの体力が0に設定されます%nl%%nl%§7常時発動能力：無し" if {_ability} is {ability::2}
         return "%nl%§fあなたは幽霊のようになることができます。%nl%%nl%§7切り替え可能能力：スペクテイターモード%nl%§8有効化するとゲームモードがスペクテイターになります。%nl%無効化するとサバイバルになります。%nl%%nl%§7常時発動能力：無し" if {_ability} is {ability::3}
         return "%nl%§fあなたの周りのプレイヤーはブロックの設置や破壊ができなくなります。%nl%%nl%§7切り替え可能能力：アドベンチャーモード%nl%§8有効化されている間半径16メートル以内の%nl%§8プレイヤーのゲームモードはアドベンチャーになります。%nl%効果は対象が範囲を出るかこちらが能力を無効にするまで続きます%nl%%nl%§7常時発動能力：無し" if {_ability} is {ability::4}
-        return "%nl%§fあなたは死ぬことがないです。%nl%%nl%§7切り替え可能能力：無し%nl%§7常時発動能力：不死%nl%§8しっかりダメージは受けますが体力が0になると完全回復します§0(痛い....)%nl%§4§lそこが奈落だろうと死ぬことはできません。" if {_ability} is {ability::5}
-        return "%nl%§fあなたは生物やブロックを爆発させることができます。%nl%%nl%§7切り替え可能能力：爆破%nl%§8エンティティにダメージを与えると爆発します(ゾンビを２発で殺せる程度)%nl%§8ブロックを殴ると爆発します(原木を一つ一撃で壊せる程度)%nl%§0あと他の能力は/の後は英語なのになぜこれはドイツ語なのか。" if {_ability} is {ability::6}
+        return "%nl%§fあなたは死ぬことがないです。%nl%%nl%§7切り替え可能能力：無し%nl%§7常時発動能力：不死%nl%§8しっかりダメージは受けますが体力が0になると完全回復します§0(痛い....)" if {_ability} is {ability::5}
+        return "%nl%§fあなたは生物やブロックを爆発させることができます。%nl%%nl%§7切り替え可能能力：爆破%nl%§8エンティティにダメージを与えると爆発します%nl%§8ブロックを殴ると爆発します%nl%§0あと他の能力は/の後は英語なのになぜこれはドイツ語なのか。" if {_ability} is {ability::6}
 
 
 every 1 tick:
@@ -111,6 +119,8 @@ every 1 tick:
         set helmet of loop-player to stone button named "§7あなたの能力は""%abilityof(loop-player)%§7です" with lore abilityslore(abilityof(loop-player))
         ability4(loop-player)
 on inventory click:
-    cancel event if event-slot is helmet of player
+    if event-slot is helmet of player:
+        cancel event
+        abilitytoggle(false, player)        
 on death of player:
     remove all stone button from the drops
