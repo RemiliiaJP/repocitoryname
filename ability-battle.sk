@@ -4,20 +4,19 @@ command /start:
     trigger:
         loop all players:
             set loop-player's gamemode to survival
-            abilitytoggle(false, loop-player)
+            abilitytoggle(true, loop-player)
             ability(random integer from 1 to 6, loop-player)
             set {_p} to name of loop-player
-            send "あなたの能力は ""%{ability::players::%{_p}%}%§r""です" to loop-player
-            send "能力の発動は""/ability"" で切り替えることができます" to loop-player
+            send "あなたの能力は ""%{ability::players::%{_p}%}%§r""です%nl%能力の詳細はインベントリの頭防具でいつでも確認できます" to loop-player
+            send "切り替え可能能力は""/ability""または""/a""で切り替えることができます" to loop-player
 #能力切り替え
 command /ability:
     aliases: /a
     trigger:
         abilitytoggle(false, player)
 function abilitytoggle(forcefalse: boolean, player: player):
-    if {_forcefalse} is true:
-        exit 1 sections
     if abilityistrue({_player}) is no:
+        exit 1 sections if {_forcefalse} is true 
         set metadata value "toggle" of {_player} to true
         send "能力の発動を有効化" to {_player}
         set {_player}'s gamemode to spectator if abilityof({_player}) is {ability::3} #能力3スペク化
@@ -42,17 +41,37 @@ on damage by player:
     set victim's health to 0 if abilityof(attacker) is {ability::2}
 #能力5不死身
 on death of player:
-    cancel event if abilityof(victim) is {ability::5}
+    abilityof(victim) is {ability::5}
+    cancel event
+    add potion effect of slowness of tier 4 without particles for 5 seconds to potion effects of victim
 on teleport:
     cancel event if teleport cause is spectator
-
-function ability4(player: player)::
+#能力4アドベ化
+function ability4(player: player):
     abilityistrue({_player}) is yes
     abilityof({_player}) is {ability::4}
     loop all players in radius 16 of {_player}:
-        loop player is not {_player}
-        set gamemode of loop-player is adventure
-
+        metadata value "adv" of loop-player is not true
+        set metadata value "adv" of loop-player to true
+        set loop-player's gamemode to adventure
+        while all players in radius 16 of {_player} contains loop-player:
+            wait 1 tick
+            stop loop if abilityistrue({_player}) is not yes
+            stop loop if abilityof({_player}) is not {ability::4}
+        set loop-player's gamemode to survival
+        set metadata value "adv" of loop-player to false
+#能力6爆破
+on block damage:
+    abilityistrue(player) is yes
+    abilityof(player) is {ability::6}
+    make an explosion of force 1
+on damage:
+    if damage cause is entity explosion or block explosion:
+        cancel event if abilityof(victim) is {ability::6}
+    attacker is player   
+    abilityistrue(attacker) is yes
+    abilityof(attacker) is {ability::6}
+    make an explosion of force 1 at victim   
 #ドロップ10倍キャンペーン
 on death:
     attacker is player
@@ -78,7 +97,20 @@ function abilityof(player: player) :: text:
 function abilityistrue(player: player) :: boolean:
     return yes if metadata value "toggle" of {_player} is true
     return no if metadata value "toggle" of {_player} is not true
+function abilityslore(ability: text) :: text:
+        return "%nl%§8あなたは空を飛ぶことができます。%nl%%nl%§7切り替え可能能力：飛行%nl%§8有効の間クリエ飛行ができ落下ダメージが無くなり%nl%満腹度が4未満にならなくなります。%nl%%nl%§7常時発動能力：無し" if {_ability} is {ability::1}
+        return "%nl%§cあなたは生物を一撃で殺すことができます。%nl%%nl%§7切り替え可能能力：一撃必殺%nl%§8有効になっている間エンティティに攻撃すると%nl%§8攻撃されたエンティティの体力が0に設定されます%nl%%nl%§7常時発動能力：無し" if {_ability} is {ability::2}
+        return "%nl%§fあなたは幽霊のようになることができます。%nl%%nl%§7切り替え可能能力：スペクテイターモード%nl%§8有効化するとゲームモードがスペクテイターになります。%nl%無効化するとサバイバルになります。%nl%%nl%§7常時発動能力：無し" if {_ability} is {ability::3}
+        return "%nl%§fあなたの周りのプレイヤーはブロックの設置や破壊ができなくなります。%nl%%nl%§7切り替え可能能力：アドベンチャーモード%nl%§8有効化されている間半径16メートル以内の%nl%§8プレイヤーのゲームモードはアドベンチャーになります。%nl%効果は対象が範囲を出るかこちらが能力を無効にするまで続きます%nl%%nl%§7常時発動能力：無し" if {_ability} is {ability::4}
+        return "%nl%§fあなたは死ぬことがないです。%nl%%nl%§7切り替え可能能力：無し%nl%§7常時発動能力：不死%nl%§8しっかりダメージは受けますが体力が0になると完全回復します§0(痛い....)%nl%§4§lそこが奈落だろうと死ぬことはできません。" if {_ability} is {ability::5}
+        return "%nl%§fあなたは生物やブロックを爆発させることができます。%nl%%nl%§7切り替え可能能力：爆破%nl%§8エンティティにダメージを与えると爆発します(ゾンビを２発で殺せる程度)%nl%§8ブロックを殴ると爆発します(原木を一つ一撃で壊せる程度)%nl%§0あと他の能力は/の後は英語なのになぜこれはドイツ語なのか。" if {_ability} is {ability::6}
+
+
 every 1 tick:
     loop all players:
-        send action bar "あなたの能力は%abilityof(loop-player)%です" to loop-player
+        set helmet of loop-player to stone button named "§7あなたの能力は""%abilityof(loop-player)%§7です" with lore abilityslore(abilityof(loop-player))
         ability4(loop-player)
+on inventory click:
+    cancel event if event-slot is helmet of player
+on death of player:
+    remove all stone button from the drops
