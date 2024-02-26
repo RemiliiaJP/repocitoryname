@@ -7,7 +7,7 @@ command /start:
             abilitytoggle(false, loop-player)
             ability(random integer from 1 to 6, loop-player)
             set {_p} to name of loop-player
-            send "あなたの能力は %{ability::players::%{_p}%}% です" to loop-player
+            send "あなたの能力は ""%{ability::players::%{_p}%}%§r""です" to loop-player
             send "能力の発動は""/ability"" で切り替えることができます" to loop-player
 #能力切り替え
 command /ability:
@@ -32,19 +32,27 @@ function abilitytoggle(forcefalse: boolean, player: player):
 on jump:
     abilityistrue(event-player) is yes
     allow flight to event-player if abilityof(event-player) is {ability::1}
-#能力2ワンパン
-on damage by player:
-    abilityistrue(attacker) is yes
-    set victim's health to 0 if abilityof(attacker) is {ability::2}
 on food bar change:
     abilityistrue(event-player) is yes
     player's food level < 4
     set the player's food level to 4 if abilityof(player) is {ability::1}
+#能力2ワンパン
+on damage by player:
+    abilityistrue(attacker) is yes
+    set victim's health to 0 if abilityof(attacker) is {ability::2}
 #能力5不死身
 on death of player:
     cancel event if abilityof(victim) is {ability::5}
 on teleport:
     cancel event if teleport cause is spectator
+
+function ability4(player: player)::
+    abilityistrue({_player}) is yes
+    abilityof({_player}) is {ability::4}
+    loop all players in radius 16 of {_player}:
+        loop player is not {_player}
+        set gamemode of loop-player is adventure
+
 #ドロップ10倍キャンペーン
 on death:
     attacker is player
@@ -53,12 +61,12 @@ on death:
         give drops to attacker
 #能力設定
 on load:
-    set {ability::1} to "飛行／§k__§rUnknown Flying Object§k__§r"
-    set {ability::2} to "ワンパン／§cOne tap Killer"
-    set {ability::3} to "スペク化／§lA Invincible and Invisible"
-    set {ability::4} to "アドベ化／§2§lEverybody an Adventurer"
-    set {ability::5} to "不死身／§4§lDEATH is cancelled"
-    set {ability::6} to "爆弾魔／§a§lIch bin Creeper" 
+    set {ability::1} to "飛行 / §k__§rUnknown Flying Player§k__§r"
+    set {ability::2} to "ワンパン / §cOne Tap Killer"""
+    set {ability::3} to "スペク化 / §lA Invincible and Invisible"
+    set {ability::4} to "アドベ化 / §2§lEverybody an Adventurer"
+    set {ability::5} to "不死身 / §4§lDEATH is Cancelled"
+    set {ability::6} to "爆弾魔 / §a§lIch bin Creeper"
 #能力配布
 function ability(n: number ,p :player):
     set {_p} to name of {_p}
@@ -72,4 +80,5 @@ function abilityistrue(player: player) :: boolean:
     return no if metadata value "toggle" of {_player} is not true
 every 1 tick:
     loop all players:
-        send action bar "あなたの能力は%abilityof(loop-player)%です" to loop-player        
+        send action bar "あなたの能力は%abilityof(loop-player)%です" to loop-player
+        ability4(loop-player)
