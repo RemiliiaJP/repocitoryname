@@ -16,9 +16,9 @@ command /ability:
     aliases: /a
     trigger:
         abilitytoggle(false, player)
-function abilitytoggle(forcefalse: boolean, player: player):
+function abilitytoggle(forcedisable: boolean, player: player):
     if abilityistrue({_player}) is no:
-        exit 1 sections if {_forcefalse} is true 
+        exit 1 sections if {_forcedisable} is true 
         set metadata value "toggle" of {_player} to true
         send "能力の発動を有効化" to {_player}
         set {_player}'s gamemode to spectator if abilityof({_player}) is {ability::3} #能力3スペク化
@@ -53,6 +53,7 @@ function ability4(player: player):
     abilityistrue({_player}) is yes
     abilityof({_player}) is {ability::4}
     loop all players in radius 16 of {_player}:
+        loop-player is not {_player}
         metadata value "adv" of loop-player is not true
         set metadata value "adv" of loop-player to true
         set loop-player's gamemode to adventure
@@ -82,18 +83,36 @@ function ability7(player: player):
     set metadata value "Atime" of {_player} to true
     command "/tick rate 200"
     loop 15*20 time:
-        wait 1 tick
+        wait 10 tick
         stop loop if abilityistrue({_player}) is not yes
         stop loop if abilityof({_player}) is not {ability::7}
     command "/tick rate 20"
-    loop 15*20 time:
+    addcooltime({_player}, 30)
+#Cooltime追加
+function addcooltime(player: player, time: number):
+    loop {time}*20 time:
         wait 1 tick
         abilityistrue({_player}) is yes
         abilitytoggle(true, {_player})
         send "クールタイム中なので発動に失敗しました" to {_player}
     send action bar "§4能力の再使用が可能です。" to {_player}
-    set metadata value "Atime" of {_player} to false
- 
+    if abilityof({_player}) is {ability::7}:
+        set metadata value "Atime" of {_player} to false
+
+on food bar change:
+    set the player's food level to 10
+    abilityof(player) is {ability::8}
+#ハイペ
+on rightclick:
+    player's tool is {item::1}
+    loop 10 time:
+        block infront of player is air or cave air or void air
+        teleport player infront of player
+    make a fake explosion at player
+    loop all entities in radius 10 of player:
+        loop-entity is not player
+        make player attack loop-entity
+    add potion effect of absorption of tier 4 for 10 second to potion effects of player if amplifier of absorption of player is not 4 
 #ドロップ10倍キャンペーン
 on death:
     attacker is player
@@ -102,20 +121,27 @@ on death:
         give drops to attacker
 #能力設定
 on load:
-    set {ability::1} to "飛行 / §k__§r𝕏§k__§r"
+    set {ability::1} to "飛行 / §k_＿_＿§r𝕏§k_＿_＿§r"
     set {ability::2} to "ワンパン / §cOne Tap Killer"
     set {ability::3} to "スペク化 / §lA Invincible and Invisible"
     set {ability::4} to "アドベ化 / §2§lEverybody an Adventurer"
     set {ability::5} to "不死身 / §4§lDEATH is Cancelled"
     set {ability::6} to "爆弾魔 / §a§lIch bin Creeper"
     set {ability::7} to "時間加速 / §e Accerarate Worlds"
+    set {ability::8} to "空島出身者 / §bSkyBlocker"
+    set {item::1} to iron sword of smite 7 named "Hyperion" with lore "§7ItemAbility(右クリック)%nl%%nl%§8ShadowWarp%nl%§7正面に最大10mテレポート%nl%§8Implosion%nl%§7テレポート先で半径10m以内にいるエンティティに%nl%§7ダメージを与える爆破を起こす%nl%§8WitherShield%nl%§7金ハートが10秒つく%nl%§0受け渡し不可"
+
 #能力配布
 function ability(n: number ,p :player):
     set {_p} to name of {_p}
     if {_n} is 0:
         set {ability::players::%{_p}%} to random element out of {ability::*}
-        stop
-    set {ability::players::%{_p}%} to {ability::%{_n}%}
+    else:
+        set {ability::players::%{_p}%} to {ability::%{_n}%}
+    giveitem({_p})
+function giveitem(player: player):
+    if abilityof({_player}) is {ability::8}:
+        give {item::1} to {_player}
 #能力識別
 function abilityof(player: player) :: text:
     set {_p} to name of {_player}
@@ -131,7 +157,7 @@ function abilityslore(ability: text) :: text:
         return "%nl%§4あなたは死ぬことがないです。%nl%%nl%§7切り替え可能能力：無し%nl%§7常時発動能力：不死%nl%§8しっかりダメージは受けますが体力が0になると完全回復します§0(痛い....)" if {_ability} is {ability::5}
         return "%nl%§aあなたは生物やブロックを爆発させることができます。%nl%%nl%§7切り替え可能能力：爆破%nl%§8エンティティにダメージを与えると爆発します%nl%§8ブロックを殴ると爆発します%nl%§0あと他の能力は/の後は英語なのになぜこれはドイツ語なのか。" if {_ability} is {ability::6}
         return "%nl%§eあなたはプレイヤー以外のすべてを加速させることができます。%nl%%nl%§7切り替え可能能力：時間加速%nl%有効化すると15秒間時間が加速し無敵になります。%nl%効果が終了するか手動で無効化するとしばらく使えなくなります。" if {_ability} is {ability::6}
-
+        return "%nl%§bあなたは別の世界からやってきました。%nl%§3別の世界のプレイヤーの性質とアイテムを持っています。%nl%%nl%§7専用アイテム：Hyperio%nl%§7常時発動能力：Skyblock%nl%§8空腹にならない"
 
 every 1 tick:
     loop all players:
@@ -144,5 +170,21 @@ on inventory click:
         abilitytoggle(false, player)        
 on death of player:
     remove all stone button from the drops
+    remove all {item::1} from drops
+    force victim to respawn
+    wait 1 tick
+    giveitem(victim)
 on kick:
-    cancel event    
+    cancel event
+command /test <integer> <player>:
+    permission: op
+    trigger:
+        ability(arg-1, arg-2)
+        send "あなたの能力は ""%abilityof(arg-2)%§r""です%nl%能力の詳細はインベントリの頭防具でいつでも確認できます" to arg-2
+        send "切り替え可能能力は""/ability""または""/a""で切り替えることができます" to arg-2
+on item damage:
+    lore of event-item contains "§0受け渡し不可"
+    cancel event
+on drop:
+    lore of event-item contains "§0受け渡し不可"
+    cancel event 
