@@ -112,8 +112,14 @@ on rightclick:
     loop all entities in radius 10 of player:
         loop-entity is not player
         make player attack loop-entity
-    add potion effect of absorption of tier 4 for 10 second to potion effects of player if amplifier of absorption of player is not 4 
-#ドロップ10倍キャンペーン
+    add potion effect of absorption of tier 2 for 10 second to potion effects of player if amplifier of absorption of player is not 2 
+on damage:
+    attacker is player
+    attacker's tool is {item::1}
+    cancel event
+    damage victim by final damage
+    set victim's target to attacker
+    #ドロップ10倍キャンペーン
 on death:
     attacker is player
     victim is not player
@@ -157,7 +163,7 @@ function abilityslore(ability: text) :: text:
         return "%nl%§4あなたは死ぬことがないです。%nl%%nl%§7切り替え可能能力：無し%nl%§7常時発動能力：不死%nl%§8しっかりダメージは受けますが体力が0になると完全回復します§0(痛い....)" if {_ability} is {ability::5}
         return "%nl%§aあなたは生物やブロックを爆発させることができます。%nl%%nl%§7切り替え可能能力：爆破%nl%§8エンティティにダメージを与えると爆発します%nl%§8ブロックを殴ると爆発します%nl%§0あと他の能力は/の後は英語なのになぜこれはドイツ語なのか。" if {_ability} is {ability::6}
         return "%nl%§eあなたはプレイヤー以外のすべてを加速させることができます。%nl%%nl%§7切り替え可能能力：時間加速%nl%有効化すると15秒間時間が加速し無敵になります。%nl%効果が終了するか手動で無効化するとしばらく使えなくなります。" if {_ability} is {ability::6}
-        return "%nl%§bあなたは別の世界からやってきました。%nl%§3別の世界のプレイヤーの性質とアイテムを持っています。%nl%%nl%§7専用アイテム：Hyperio%nl%§7常時発動能力：Skyblock%nl%§8空腹にならない"
+        return "%nl%§bあなたは別の世界からやってきました。%nl%§3別の世界のプレイヤーの性質とアイテムを持っています。%nl%%nl%§7専用アイテム：Hyperion%nl%§7常時発動能力：Skyblock%nl%§8空腹にならない"
 
 every 1 tick:
     loop all players:
@@ -188,3 +194,6 @@ on item damage:
 on drop:
     lore of event-item contains "§0受け渡し不可"
     cancel event 
+on inventory click:
+    lore of event-item contains "§0受け渡し不可"
+    cancel event if player's current inventory is not player's inventory
